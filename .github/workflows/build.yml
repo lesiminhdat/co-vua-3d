@@ -1,0 +1,92 @@
+name: Build apps
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  android:
+    name: Android (APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: app/package-lock.json }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm ci
+      - run: npm run prepare-web
+      - run: npx cap sync android
+      - name: Build APK
+        working-directory: app/android
+        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - run: cp android/app/build/outputs/apk/debug/app-debug.apk CoVua3D.apk
+      - uses: actions/upload-artifact@v4
+        with: { name: CoVua3D-android-apk, path: app/CoVua3D.apk }
+
+  ios:
+    name: iOS (IPA chưa ký)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: app/package-lock.json }
+      - run: npm ci
+      - run: npm run prepare-web
+      - name: Tạo project iOS
+        run: |
+          npx cap add ios --packagemanager SPM
+          npx @capacitor/assets generate --ios --iconBackgroundColor '#0f172a' --splashBackgroundColor '#171717'
+          npx cap sync ios
+      - name: Build .app (không ký)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+      - name: Đóng gói .ipa
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qr CoVua3D-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with: { name: CoVua3D-ios-ipa, path: app/CoVua3D-unsigned.ipa }
+
+  desktop:
+    name: Desktop (${{ matrix.os }})
+    strategy:
+      matrix:
+        os: [windows-latest, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: app/package-lock.json }
+      - run: npm ci
+      - run: npm run prepare-web
+      - env: { CSC_IDENTITY_AUTO_DISCOVERY: "false" }
+        run: npx electron-builder ${{ runner.os == 'Windows' && '--win' || '--mac' }} --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CoVua3D-desktop-${{ runner.os }}
+          path: |
+            app/dist/*.exe
+            app/dist/*.dmg
+
+  release:
+    name: GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [android, ios, desktop]
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    defaults: { run: { working-directory: . } }
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: out, merge-multiple: true }
+      - uses: softprops/action-gh-release@v2
+        with: { files: out/* }

@@ -1,0 +1,8 @@
+{
+  "appId": "vn.covua3d.app",
+  "appName": "Cờ Vua 3D",
+  "webDir": "www",
+  "backgroundColor": "#171717",
+  "android": { "allowMixedContent": false },
+  "ios": { "contentInset": "never", "backgroundColor": "#171717" }
+}
