@@ -4,3 +4,4 @@ app/www/
 app/ios/
 *.log
 index.gemini-original.html
+dist-ci/
