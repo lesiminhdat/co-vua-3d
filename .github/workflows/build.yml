@@ -41,12 +41,12 @@ jobs:
       - run: npm run prepare-web
       - name: Tạo project iOS
         run: |
-          npx cap add ios --packagemanager SPM
+          npx cap add ios
           npx @capacitor/assets generate --ios --iconBackgroundColor '#0f172a' --splashBackgroundColor '#171717'
           npx cap sync ios
       - name: Build .app (không ký)
         run: |
-          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release \
             -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
       - name: Đóng gói .ipa
