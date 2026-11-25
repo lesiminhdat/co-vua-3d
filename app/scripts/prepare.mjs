@@ -73,6 +73,9 @@ rep('</head>', `<style>
       html,body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
     </style>
 </head>`);
+// Dự phòng engine khi Web Worker không chạy (iOS) -> tránh treo bàn cờ.
+fs.copyFileSync(path.join(root, 'scripts', 'engine-fallback.js'), path.join(vendor, 'engine-fallback.js'));
+rep('</body>', '<script src="vendor/engine-fallback.js"></script>\n</body>');
 if (/https?:\/\/(cdn|fonts)\./.test(html)) console.warn('Cảnh báo: vẫn còn link CDN trong HTML');
 fs.writeFileSync(path.join(www, 'index.html'), html);
 console.log('www/index.html ready');
