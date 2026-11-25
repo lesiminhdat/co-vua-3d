@@ -1,7 +1,7 @@
 {
   "name": "co-vua-3d",
   "productName": "Cờ Vua 3D",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Cờ Vua 3D - Stockfridge AI & Đánh Giá Nước Đi",
   "author": "Co Vua 3D",
   "main": "electron/main.js",

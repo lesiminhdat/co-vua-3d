@@ -32,7 +32,7 @@ jobs:
 
   ios:
     name: iOS (IPA chưa ký)
-    runs-on: macos-15
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -61,7 +61,7 @@ jobs:
     name: Desktop (${{ matrix.os }})
     strategy:
       matrix:
-        os: [windows-latest, macos-15]
+        os: [windows-latest, macos-15-intel]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
