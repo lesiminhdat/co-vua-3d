@@ -50,6 +50,19 @@ Link: **https://lesiminhdat.github.io/co-vua-3d/** (tự cập nhật mỗi khi 
 - **Android:** mở bằng Chrome → bấm **Cài đặt** trên thanh hiện ra ở cuối trang.
 - Sau lần mở đầu tiên, app chạy được cả khi không có mạng.
 
+### Chơi online 1 đấu 1 (PC ↔ điện thoại)
+
+1. Chọn chế độ **Online** → **Tạo phòng mới** → bấm **Mời bạn** để gửi link (hoặc đọc mã 6 ký tự).
+2. Người kia mở link (hoặc chọn Online → nhập mã → **Vào**). Người tạo phòng cầm Trắng.
+3. **Ván mới** sẽ đổi màu quân. Tải lại trang vẫn giữ nguyên ván và màu quân.
+4. Người thứ 3 mở cùng link sẽ được xem trận.
+
+Nước đi được chuyển qua máy chủ MQTT công cộng miễn phí (broker.emqx.io, dự phòng broker.hivemq.com) — không cần tài khoản, nhưng không phải máy chủ riêng.
+
+### Xem lại ván đấu
+
+Hết ván bấm **Xem lại ván đấu** (hoặc **Xem lại** ở phần lịch sử, hoặc bấm vào một nước bất kỳ). Dùng ⏮ ◀ ▶ ⏭ hoặc phím ← →, mỗi nước có nhãn đánh giá (Tốt / Sai lầm / Tệ...) và gợi ý nước tốt hơn.
+
 Chạy thử bản web trên máy: `node app/scripts/serve.mjs` rồi mở http://localhost:5173.
 
 ## Cài trên điện thoại (file APK / IPA)

@@ -6,8 +6,20 @@
   if (!isWeb || isNativeShell) return;
 
   if ('serviceWorker' in navigator) {
+    // Khi có phiên bản game mới, service worker mới tiếp quản -> tải lại trang một lần để dùng bản mới
+    // (trừ khi đang giữa ván online thì để lần mở sau).
+    var hadController = !!navigator.serviceWorker.controller;
+    var reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (!hadController || reloaded) return;
+      var midGame = typeof game !== 'undefined' && game.history().length > 0;
+      if (midGame) return;
+      reloaded = true;
+      location.reload();
+    });
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('SW register failed', e); });
+      navigator.serviceWorker.register('sw.js').then(function (reg) { reg.update(); })
+        .catch(function (e) { console.warn('SW register failed', e); });
     });
   }
 

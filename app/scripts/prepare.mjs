@@ -29,6 +29,8 @@ async function save(url, file, binary = false) {
 await save('https://cdn.tailwindcss.com/3.4.17', path.join(vendor, 'tailwind.js'));
 const chessSrc = await save('https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js', path.join(vendor, 'chess.min.js'));
 fs.writeFileSync(path.join(vendor, 'chess-src.js'), 'window.__CHESS_SRC=' + JSON.stringify(chessSrc) + ';\n');
+const MQTT_URL = 'https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js'; // chơi online
+await save(MQTT_URL, path.join(vendor, 'mqtt.min.js'));
 
 // 2. Font Awesome (css + webfonts)
 const FA = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0';
@@ -62,6 +64,7 @@ rep('<meta name="viewport" content="width=device-width, initial-scale=1.0">',
 rep('<script src="https://cdn.tailwindcss.com"></script>', '<script src="vendor/tailwind.js"></script>');
 rep('<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js" crossorigin="anonymous"></script>',
     '<script src="vendor/chess.min.js"></script>\n    <script src="vendor/chess-src.js"></script>');
+rep(`<script src="${MQTT_URL}"></script>`, '<script src="vendor/mqtt.min.js"></script>');
 rep('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', 'vendor/fontawesome.css');
 rep('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&amp;display=swap', 'vendor/fonts.css');
 // Worker chạy từ blob: không importScripts được file cục bộ -> nhúng mã chess.js vào trước.

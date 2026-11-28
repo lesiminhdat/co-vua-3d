@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chess.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js" crossorigin="anonymous"></script>
+    <!-- MQTT (chơi online) -->
+    <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js"></script>
     <!-- Font Awesome & Google Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
@@ -914,6 +916,9 @@
                                 </div>
                                 <h2 id="gameover-title" class="text-xl font-extrabold text-white mb-1">Chiếu Hết!</h2>
                                 <p id="gameover-desc" class="text-sm text-neutral-400 mb-5">Quân Trắng giành chiến thắng</p>
+                                <button onclick="startReview(1)" class="w-full mb-2 py-2.5 bg-amber-500 hover:bg-amber-400 text-neutral-900 font-extrabold rounded-lg transition shadow-lg flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-clock-rotate-left"></i> Xem lại ván đấu
+                                </button>
                                 <button onclick="resetGame()" class="w-full py-2.5 bg-white hover:bg-neutral-200 text-neutral-900 font-extrabold rounded-lg transition shadow-lg">
                                     Chơi ván mới
                                 </button>
@@ -937,6 +942,21 @@
                 </div>
                 <div id="bottom-score" class="text-xs font-extrabold text-neutral-300 bg-neutral-800 px-2.5 py-1 rounded-md border border-neutral-700"></div>
             </div>
+
+            <!-- Thanh xem lại ván đấu -->
+            <div id="review-bar" class="hidden w-full max-w-[596px] mt-2 bg-[#1e1e1e] border border-amber-500/40 rounded-xl px-3 py-2.5 shadow-md">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                    <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5"><i class="fa-solid fa-clock-rotate-left"></i> Xem lại ván đấu</span>
+                    <span id="review-label" class="text-xs font-semibold text-neutral-300 truncate">Thế cờ ban đầu</span>
+                </div>
+                <div class="grid grid-cols-5 gap-1.5">
+                    <button onclick="reviewGoto(0)" title="Về đầu ván" class="py-2.5 bg-[#2a2a2a] hover:bg-[#383838] text-neutral-100 rounded-lg text-sm"><i class="fa-solid fa-backward-fast"></i></button>
+                    <button onclick="reviewGoto(reviewPly - 1)" title="Lùi 1 nước (phím ←)" class="py-2.5 bg-[#2a2a2a] hover:bg-[#383838] text-neutral-100 rounded-lg text-sm"><i class="fa-solid fa-chevron-left"></i></button>
+                    <button onclick="reviewGoto(reviewPly + 1)" title="Tiến 1 nước (phím →)" class="py-2.5 bg-[#2a2a2a] hover:bg-[#383838] text-neutral-100 rounded-lg text-sm"><i class="fa-solid fa-chevron-right"></i></button>
+                    <button onclick="reviewGoto(Infinity)" title="Tới nước cuối" class="py-2.5 bg-[#2a2a2a] hover:bg-[#383838] text-neutral-100 rounded-lg text-sm"><i class="fa-solid fa-forward-fast"></i></button>
+                    <button onclick="exitReview()" title="Thoát xem lại" class="py-2.5 bg-amber-500 hover:bg-amber-400 text-neutral-900 font-extrabold rounded-lg text-xs">Thoát</button>
+                </div>
+            </div>
         </div>
 
         <!-- Cột Phải: Bảng điều khiển, Cấp độ Stockfridge & Đánh giá nước đi -->
@@ -949,13 +969,47 @@
                     <span id="turn-indicator" class="text-xs font-extrabold px-3 py-1 rounded-md bg-white text-neutral-900 shadow">Lượt Trắng đi</span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-3 gap-2">
                     <button id="mode-ai" onclick="setGameMode('ai')" class="py-2 px-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 bg-white text-neutral-900 transition shadow">
-                        <i class="fa-solid fa-snowflake"></i> Đấu Stockfridge
+                        <i class="fa-solid fa-snowflake"></i> Đấu máy
                     </button>
                     <button id="mode-pvp" onclick="setGameMode('pvp')" class="py-2 px-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 bg-[#2a2a2a] text-neutral-300 hover:bg-[#353535] transition">
-                        <i class="fa-solid fa-user-group"></i> 2 Người chơi
+                        <i class="fa-solid fa-user-group"></i> 2 người
                     </button>
+                    <button id="mode-online" onclick="setGameMode('online')" class="py-2 px-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 bg-[#2a2a2a] text-neutral-300 hover:bg-[#353535] transition">
+                        <i class="fa-solid fa-globe"></i> Online
+                    </button>
+                </div>
+
+                <!-- Chơi online 1 đấu 1 qua link phòng -->
+                <div id="online-settings" class="hidden pt-1 space-y-2">
+                    <div id="online-lobby" class="space-y-2">
+                        <button onclick="onlineCreateRoom()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-lg text-sm flex items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-plus"></i> Tạo phòng mới
+                        </button>
+                        <div class="flex gap-2">
+                            <input id="online-code-input" maxlength="6" placeholder="Nhập mã phòng" autocomplete="off" autocapitalize="characters"
+                                class="flex-1 min-w-0 bg-[#141414] border border-neutral-700 rounded-lg px-3 py-2 text-sm font-mono uppercase tracking-widest text-white placeholder:normal-case placeholder:tracking-normal placeholder:font-sans focus:outline-none focus:border-emerald-500"
+                                onkeydown="if(event.key==='Enter') onlineJoinFromInput()">
+                            <button onclick="onlineJoinFromInput()" class="px-4 py-2 bg-[#2a2a2a] hover:bg-[#383838] text-white font-bold rounded-lg text-sm">Vào</button>
+                        </div>
+                    </div>
+                    <div id="online-room" class="hidden space-y-2">
+                        <div class="flex items-center justify-between bg-[#141414] border border-neutral-800 rounded-lg px-3 py-2">
+                            <div>
+                                <div class="text-[11px] text-neutral-500">Mã phòng</div>
+                                <div id="online-room-code" class="font-mono font-extrabold text-lg tracking-widest text-white">------</div>
+                            </div>
+                            <div class="flex gap-1.5">
+                                <button onclick="onlineShareLink()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs flex items-center gap-1.5"><i class="fa-solid fa-share-nodes"></i> Mời bạn</button>
+                                <button onclick="onlineLeaveRoom()" class="px-3 py-2 bg-[#2a2a2a] hover:bg-[#383838] text-neutral-200 font-bold rounded-lg text-xs">Rời</button>
+                            </div>
+                        </div>
+                        <div id="online-status" class="text-xs text-neutral-300 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Đang kết nối...
+                        </div>
+                    </div>
+                    <div id="online-error" class="hidden text-xs text-red-400"></div>
                 </div>
 
                 <!-- Chọn Level 1 -> 5 cho Stockfridge -->
@@ -992,7 +1046,10 @@
             <div class="flex-1 flex flex-col overflow-hidden mt-2">
                 <div class="px-4 py-2 bg-[#161616] border-y border-neutral-800 flex justify-between text-xs font-bold text-neutral-400">
                     <span>Lịch sử &amp; Đánh giá nước đi</span>
-                    <span id="move-count">0 nước</span>
+                    <span class="flex items-center gap-2">
+                        <button id="btn-review" onclick="startReview(1)" class="hidden text-amber-400 hover:text-amber-300 font-bold"><i class="fa-solid fa-clock-rotate-left"></i> Xem lại</button>
+                        <span id="move-count">0 nước</span>
+                    </span>
                 </div>
                 <div id="move-history" class="flex-1 overflow-y-auto p-2 space-y-1 text-xs"><div class="text-center text-neutral-500 py-8 italic">Chưa có nước đi nào. Hãy chọn quân để bắt đầu!</div></div>
             </div>
@@ -1085,6 +1142,8 @@
         let moveEvaluations = []; // Lưu đánh giá từng nước đi
         let currentEvalScore = 0; // Điểm đánh giá hiện tại (tính theo centipawns, + là Trắng ưu)
         let pendingFlipAnimation = null; // Lưu tọa độ cho hiệu ứng FLIP 60fps
+        let reviewGame = null; // Bản sao ván cờ khi đang xem lại (null = đang chơi bình thường)
+        let reviewPly = 0;     // Đang xem tới nước thứ mấy
 
         /**
          * HỆ THỐNG ÂM THANH WEB AUDIO API THUẦN (KHÔNG ĐỘ TRỄ, SIÊU NHẸ)
@@ -1507,7 +1566,7 @@
             }
         }
 
-        function executeMoveWithFLIP(moveObj, isHumanMove = true) {
+        function executeMoveWithFLIP(moveObj, isHumanMove = true, fromRemote = false) {
             const fromEl = document.querySelector(`[data-square="${moveObj.from}"]`);
             const firstRect = fromEl ? fromEl.getBoundingClientRect() : null;
 
@@ -1528,7 +1587,7 @@
             selectedSquare = null;
             legalMoves = [];
 
-            if (firstRect) {
+            if (firstRect && !reviewGame) {
                 pendingFlipAnimation = {
                     toSquare: moveResult.to,
                     firstRect: firstRect
@@ -1550,6 +1609,9 @@
 
             // Vẽ lại bàn cờ và kích hoạt FLIP glide mượt mà trên GPU
             updateUI();
+
+            // Chơi online: gửi nước vừa đi cho đối thủ
+            if (gameMode === 'online' && !fromRemote) onlinePublishState();
 
             if (moveResult.captured) {
                 spawnCaptureParticles(moveResult.to);
@@ -1643,8 +1705,10 @@
          * XỬ LÝ TƯƠNG TÁC BÀN CỜ
          */
         function handleSquareClick(squareName) {
+            if (reviewGame) return; // Đang xem lại ván: không cho đi quân
             if (game.game_over() || isAiThinking) return;
             if (gameMode === 'ai' && game.turn() === 'b') return;
+            if (gameMode === 'online' && !onlineCanMove()) return;
 
             const moveAttempt = legalMoves.find(m => m.to === squareName);
             if (moveAttempt) {
@@ -1698,6 +1762,7 @@
          */
         function renderBoard() {
             const boardEl = document.getElementById('chessboard');
+            const g = reviewGame || game; // Đang xem lại ván thì vẽ thế cờ của nước đang xem
             boardEl.innerHTML = '';
 
             const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
@@ -1707,9 +1772,9 @@
             const displayFiles = boardOrientation === 'w' ? files : [...files].reverse();
 
             let kingInCheckSquare = null;
-            if (game.in_check()) {
-                const turn = game.turn();
-                const boardState = game.board();
+            if (g.in_check()) {
+                const turn = g.turn();
+                const boardState = g.board();
                 for (let r = 0; r < 8; r++) {
                     for (let c = 0; c < 8; c++) {
                         const p = boardState[r][c];
@@ -1759,7 +1824,7 @@
                         squareDiv.appendChild(fileLabel);
                     }
 
-                    const piece = game.get(squareName);
+                    const piece = g.get(squareName);
                     if (piece) {
                         const wrapper = document.createElement('div');
                         wrapper.className = 'piece-wrapper';
@@ -1840,18 +1905,22 @@
                 ? 'text-xs font-extrabold px-3 py-1 rounded-md bg-white text-neutral-900 shadow' 
                 : 'text-xs font-extrabold px-3 py-1 rounded-md bg-neutral-800 text-white border border-neutral-600 shadow';
 
-            document.getElementById('btn-undo').disabled = game.history().length === 0 || isAiThinking;
+            document.getElementById('btn-undo').disabled = game.history().length === 0 || isAiThinking || gameMode === 'online' || !!reviewGame;
+            if (gameMode === 'online') onlineUpdatePanel();
 
-            if (game.game_over()) {
+            if (game.game_over() && !reviewGame) {
                 const modal = document.getElementById('gameover-modal');
                 const title = document.getElementById('gameover-title');
                 const desc = document.getElementById('gameover-desc');
                 const icon = document.getElementById('gameover-icon');
 
                 if (game.in_checkmate()) {
-                    const winner = game.turn() === 'w' ? (gameMode === 'ai' ? 'Stockfridge (Đen)' : 'Quân Đen') : 'Quân Trắng';
+                    const winnerColor = game.turn() === 'w' ? 'b' : 'w';
+                    const winner = winnerColor === 'b' ? (gameMode === 'ai' ? 'Stockfridge (Đen)' : 'Quân Đen') : 'Quân Trắng';
                     title.textContent = 'Chiếu Hết!';
-                    desc.textContent = `${winner} giành chiến thắng tuyệt đối!`;
+                    desc.textContent = gameMode === 'online' && online.myColor
+                        ? (online.myColor === winnerColor ? 'Bạn đã chiến thắng! 🎉' : 'Đối thủ đã chiến thắng.')
+                        : `${winner} giành chiến thắng tuyệt đối!`;
                     icon.innerHTML = '<i class="fa-solid fa-trophy text-yellow-400"></i>';
                 } else {
                     title.textContent = 'Hòa Cờ!';
@@ -1866,6 +1935,8 @@
             const history = game.history();
             const container = document.getElementById('move-history');
             document.getElementById('move-count').textContent = `${history.length} nước`;
+            const reviewBtn = document.getElementById('btn-review');
+            if (reviewBtn) reviewBtn.classList.toggle('hidden', history.length === 0 || !!reviewGame);
 
             if (history.length === 0) {
                 container.innerHTML = '<div class="text-center text-neutral-500 py-8 italic">Chưa có nước đi nào. Hãy chọn quân để bắt đầu!</div>';
@@ -1887,22 +1958,31 @@
                     ? `<span class="ml-1 px-1.5 py-0.2 rounded text-[10px] font-bold text-white ${bEval.bgClass}">${bEval.symbol} ${bEval.label}</span>` 
                     : '';
 
-                const isLastRow = i + 2 >= history.length;
+                const isLastRow = reviewGame ? (reviewPly === i + 1 || reviewPly === i + 2) : i + 2 >= history.length;
+                // Bấm vào một nước bất kỳ để xem lại thế cờ ở nước đó
+                const moveSpan = (san, ply) => san
+                    ? `<span onclick="startReview(${ply})" title="Xem lại thế cờ sau nước này" class="cursor-pointer rounded px-1 -mx-1 hover:bg-white/10 ${reviewGame && reviewPly === ply ? 'bg-amber-500 text-neutral-900 font-bold' : ''}">${san}</span>`
+                    : '';
 
                 html += `
-                    <div class="grid grid-cols-12 items-center px-2 py-1.5 rounded-md ${isLastRow ? 'bg-[#2a2a2a] font-semibold text-white' : 'text-neutral-300'}">
+                    <div data-row-ply="${i + 1}" class="grid grid-cols-12 items-center px-2 py-1.5 rounded-md ${isLastRow ? 'bg-[#2a2a2a] font-semibold text-white' : 'text-neutral-300'}">
                         <span class="col-span-1 text-neutral-500 font-mono">${moveNum}.</span>
                         <div class="col-span-5 flex items-center flex-wrap">
-                            <span>${wMove}</span>${wTag}
+                            ${moveSpan(wMove, i + 1)}${wTag}
                         </div>
                         <div class="col-span-6 flex items-center flex-wrap">
-                            <span>${bMove}</span>${bTag}
+                            ${moveSpan(bMove, i + 2)}${bTag}
                         </div>
                     </div>
                 `;
             }
             container.innerHTML = html;
-            container.scrollTop = container.scrollHeight;
+            if (reviewGame) {
+                const row = container.querySelector(`[data-row-ply="${reviewPly % 2 === 0 ? reviewPly - 1 : reviewPly}"]`);
+                if (row) row.scrollIntoView({ block: 'nearest' });
+            } else {
+                container.scrollTop = container.scrollHeight;
+            }
         }
 
         function updateCapturedPieces() {
@@ -1944,22 +2024,20 @@
          * ĐIỀU KHIỂN CHẾ ĐỘ & CẤP ĐỘ
          */
         function setGameMode(mode) {
+            if (gameMode === 'online' && mode !== 'online') onlineLeaveRoom(true);
             gameMode = mode;
-            const btnAi = document.getElementById('mode-ai');
-            const btnPvp = document.getElementById('mode-pvp');
-            const aiSettings = document.getElementById('ai-settings');
-
-            if (mode === 'ai') {
-                btnAi.className = 'py-2 px-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 bg-white text-neutral-900 transition shadow';
-                btnPvp.className = 'py-2 px-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 bg-[#2a2a2a] text-neutral-300 hover:bg-[#353535] transition';
-                aiSettings.classList.remove('hidden');
-            } else {
-                btnPvp.className = 'py-2 px-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 bg-white text-neutral-900 transition shadow';
-                btnAi.className = 'py-2 px-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 bg-[#2a2a2a] text-neutral-300 hover:bg-[#353535] transition';
-                aiSettings.classList.add('hidden');
-            }
+            const activeCls = 'py-2 px-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1.5 bg-white text-neutral-900 transition shadow';
+            const idleCls = 'py-2 px-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 bg-[#2a2a2a] text-neutral-300 hover:bg-[#353535] transition';
+            ['ai', 'pvp', 'online'].forEach(m => {
+                document.getElementById(`mode-${m}`).className = m === mode ? activeCls : idleCls;
+            });
+            document.getElementById('ai-settings').classList.toggle('hidden', mode !== 'ai');
+            document.getElementById('online-settings').classList.toggle('hidden', mode !== 'online');
+            if (mode !== 'online') boardOrientation = 'w';
+            if (reviewGame) exitReview();
             updatePlayerLabels();
-            resetGame();
+            resetGame(true);
+            if (mode === 'online') onlineUpdatePanel();
         }
 
         function setDifficulty(level) {
@@ -1987,6 +2065,24 @@
             const bottomAvatar = document.getElementById('bottom-avatar');
 
             const cfg = STOCKFRIDGE_LEVELS[aiLevel];
+
+            if (gameMode === 'online') {
+                const me = online.myColor;
+                const meLabel = me ? `Bạn (${me === 'w' ? 'Trắng' : 'Đen'})` : (online.room && online.gotState ? 'Người xem' : 'Bạn');
+                const oppColor = me === 'b' ? 'w' : 'b';
+                const oppLabel = online.room
+                    ? (online.players[oppColor] ? `Đối thủ (${oppColor === 'w' ? 'Trắng' : 'Đen'})` : 'Đang chờ đối thủ...')
+                    : 'Đối thủ online';
+                const chip = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700/60';
+                const bottomIsMe = boardOrientation === (me || 'w');
+                topName.textContent = bottomIsMe ? oppLabel : meLabel;
+                bottomName.textContent = bottomIsMe ? meLabel : oppLabel;
+                topElo.textContent = bottomElo.textContent = 'Online';
+                topElo.className = bottomElo.className = chip;
+                topAvatar.innerHTML = bottomIsMe ? '<i class="fa-solid fa-globe"></i>' : '<i class="fa-solid fa-user"></i>';
+                bottomAvatar.innerHTML = bottomIsMe ? '<i class="fa-solid fa-user"></i>' : '<i class="fa-solid fa-globe"></i>';
+                return;
+            }
 
             if (boardOrientation === 'w') {
                 topName.textContent = gameMode === 'ai' ? `Stockfridge (${cfg.name})` : 'Người chơi 2 (Đen)';
@@ -2018,7 +2114,7 @@
         }
 
         function undoMove() {
-            if (isAiThinking || game.history().length === 0) return;
+            if (isAiThinking || game.history().length === 0 || gameMode === 'online' || reviewGame) return;
 
             if (gameMode === 'ai') {
                 game.undo();
@@ -2046,7 +2142,15 @@
             updateUI();
         }
 
-        function resetGame() {
+        function resetGame(localOnly = false) {
+            // Online: "Ván mới" gửi cho cả hai bên (đổi màu quân cho công bằng)
+            if (gameMode === 'online' && !localOnly && online.room) {
+                if (!online.myColor) return;
+                if (game.history().length > 0 && !game.game_over() && !confirm('Bắt đầu ván mới? Ván đang chơi sẽ kết thúc.')) return;
+                onlineNewGame();
+                return;
+            }
+            if (reviewGame) exitReview(true);
             game.reset();
             selectedSquare = null;
             legalMoves = [];
@@ -2089,10 +2193,427 @@
             URL.revokeObjectURL(url);
         }
 
+        /**
+         * XEM LẠI VÁN ĐẤU: tua từng nước, xem thế cờ và đánh giá của mỗi nước (không ảnh hưởng ván đang chơi)
+         */
+        function startReview(ply) {
+            const total = game.history().length;
+            if (total === 0) return;
+            if (!reviewGame) {
+                reviewGame = new Chess();
+                selectedSquare = null;
+                legalMoves = [];
+            }
+            document.getElementById('gameover-modal').classList.add('hidden');
+            document.getElementById('review-bar').classList.remove('hidden');
+            reviewGoto(ply == null ? total : ply);
+            document.getElementById('review-bar').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            reviewAnalyzeMissing();
+        }
+
+        // Chấm điểm bù những nước chưa có đánh giá (vd. vào phòng online giữa chừng, tải lại trang)
+        let reviewAnalyzing = false;
+        async function reviewAnalyzeMissing() {
+            if (reviewAnalyzing) return;
+            reviewAnalyzing = true;
+            try {
+                const hist = game.history({ verbose: true });
+                const replay = new Chess();
+                for (let i = 0; i < hist.length; i++) {
+                    const fenBefore = replay.fen();
+                    const moveResult = replay.move(hist[i].san);
+                    if (!moveEvaluations[i] && moveResult) {
+                        const raw = await runWorkerTask('ANALYZE', { fenBefore, moveResult });
+                        if (game.history().length !== hist.length) break; // ván đã thay đổi
+                        if (raw) {
+                            moveEvaluations[i] = {
+                                key: raw.key, ...MOVE_RATINGS[raw.key],
+                                evalAfterWhite: raw.evalAfterWhite, evalDrop: raw.evalDrop, bestMoveSan: raw.bestMoveSan
+                            };
+                            if (reviewGame) { if (reviewPly === i + 1) reviewGoto(reviewPly); else updateHistory(); }
+                        }
+                    }
+                }
+            } finally {
+                reviewAnalyzing = false;
+            }
+        }
+
+        function reviewGoto(ply) {
+            if (!reviewGame) return;
+            const hist = game.history({ verbose: true });
+            reviewPly = Math.max(0, Math.min(hist.length, ply));
+            reviewGame.reset();
+            for (let i = 0; i < reviewPly; i++) reviewGame.move(hist[i].san);
+
+            const label = document.getElementById('review-label');
+            if (reviewPly === 0) {
+                lastMove = null;
+                label.textContent = `Thế cờ ban đầu • 0/${hist.length}`;
+                updateEvalBar(0);
+            } else {
+                const m = hist[reviewPly - 1];
+                const ev = moveEvaluations[reviewPly - 1];
+                const rating = ev && ev.key !== 'ai' ? ev : null;
+                lastMove = { from: m.from, to: m.to, rating };
+                const moveNo = Math.ceil(reviewPly / 2) + (m.color === 'w' ? '.' : '...');
+                label.textContent = `${moveNo} ${m.san} (${m.color === 'w' ? 'Trắng' : 'Đen'}) • ${reviewPly}/${hist.length}`;
+                if (rating) {
+                    updateLatestEvalCard(rating, m.san);
+                    if (typeof rating.evalAfterWhite === 'number') updateEvalBar(rating.evalAfterWhite);
+                } else {
+                    const badge = document.getElementById('eval-card-badge');
+                    badge.className = 'w-7 h-7 rounded-full bg-cyan-600 text-white font-extrabold text-xs flex items-center justify-center shadow';
+                    badge.textContent = ev && ev.key === 'ai' ? '❄' : '•';
+                    document.getElementById('eval-card-title').textContent = `${m.san}${ev && ev.key === 'ai' ? ' — nước đi của Stockfridge' : ''}`;
+                    document.getElementById('eval-card-desc').textContent = ev && ev.key === 'ai' ? 'Máy không tự chấm điểm nước của chính nó' : 'Chưa có đánh giá cho nước này';
+                    document.getElementById('eval-card-diff').textContent = '';
+                }
+            }
+            renderBoard();
+            updateHistory();
+        }
+
+        function exitReview(silent = false) {
+            if (!reviewGame) return;
+            reviewGame = null;
+            document.getElementById('review-bar').classList.add('hidden');
+            // Quay về thế cờ hiện tại của ván đang chơi
+            const hist = game.history({ verbose: true });
+            const lastIdx = hist.length - 1;
+            const lastEval = moveEvaluations[lastIdx];
+            lastMove = lastIdx >= 0 ? { from: hist[lastIdx].from, to: hist[lastIdx].to, rating: lastEval && lastEval.key !== 'ai' ? lastEval : null } : null;
+            if (lastMove && lastMove.rating) updateLatestEvalCard(lastMove.rating, hist[lastIdx].san);
+            updateEvalBar(currentEvalScore);
+            if (!silent) updateUI();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (!reviewGame || (e.target.closest && e.target.closest('input, textarea'))) return;
+            if (e.key === 'ArrowLeft') { reviewGoto(reviewPly - 1); e.preventDefault(); }
+            else if (e.key === 'ArrowRight') { reviewGoto(reviewPly + 1); e.preventDefault(); }
+            else if (e.key === 'Home') { reviewGoto(0); e.preventDefault(); }
+            else if (e.key === 'End') { reviewGoto(Infinity); e.preventDefault(); }
+            else if (e.key === 'Escape') { exitReview(); }
+        });
+
+        /**
+         * CHƠI ONLINE 1 ĐẤU 1: mỗi người một máy (PC / điện thoại), vào chung phòng qua mã hoặc link.
+         * Nước đi được chuyển qua máy chủ MQTT công cộng (WebSocket). Trạng thái ván được lưu "retained"
+         * trên kênh của phòng nên người vào sau / tải lại trang vẫn nhận đúng thế cờ.
+         */
+        const ONLINE_BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt'];
+        const ONLINE_WEB_URL = 'https://lesiminhdat.github.io/co-vua-3d/';
+        const ONLINE_TOPIC = (room) => `covua3d/v1/room/${room}`;
+        const online = {
+            client: null, room: null, myId: null, myColor: null,
+            players: { w: null, b: null }, seq: 0, connected: false,
+            opponentSeen: 0, joinTimer: null, pingTimer: null, gotState: false, creating: false
+        };
+
+        (function initOnlineId() {
+            let id = null;
+            try { id = localStorage.getItem('covua3d-player-id'); } catch (e) {}
+            if (!id) {
+                id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+                try { localStorage.setItem('covua3d-player-id', id); } catch (e) {}
+            }
+            online.myId = id;
+        })();
+
+        function onlineCanMove() {
+            return !!(online.connected && online.myColor && online.players.w && online.players.b && game.turn() === online.myColor);
+        }
+
+        function onlineRandomCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let s = '';
+            const buf = new Uint32Array(6);
+            crypto.getRandomValues(buf);
+            buf.forEach(n => s += chars[n % chars.length]);
+            return s;
+        }
+
+        function onlineShowError(msg) {
+            const el = document.getElementById('online-error');
+            el.textContent = msg || '';
+            el.classList.toggle('hidden', !msg);
+        }
+
+        function onlineConnect(onReady) {
+            if (typeof mqtt === 'undefined') { onlineShowError('Không tải được thư viện kết nối. Kiểm tra mạng rồi thử lại.'); return; }
+            let idx = 0;
+            const tryBroker = () => {
+                if (idx >= ONLINE_BROKERS.length) {
+                    onlineShowError('Không kết nối được máy chủ online. Kiểm tra mạng rồi thử lại.');
+                    onlineUpdatePanel();
+                    return;
+                }
+                const url = ONLINE_BROKERS[idx++];
+                const client = mqtt.connect(url, {
+                    clientId: 'cv3d_' + online.myId + '_' + Math.random().toString(36).slice(2, 6),
+                    clean: true, keepalive: 30, reconnectPeriod: 2000, connectTimeout: 7000
+                });
+                let opened = false;
+                const failTimer = setTimeout(() => { if (!opened) { client.end(true); tryBroker(); } }, 8000);
+                client.on('connect', () => {
+                    online.connected = true;
+                    onlineShowError('');
+                    if (!opened) {
+                        opened = true;
+                        clearTimeout(failTimer);
+                        online.client = client;
+                        onReady();
+                    } else if (online.room) {
+                        client.subscribe(ONLINE_TOPIC(online.room) + '/#', { qos: 1 });
+                    }
+                    onlineUpdatePanel();
+                });
+                client.on('close', () => { online.connected = false; onlineUpdatePanel(); });
+                client.on('offline', () => { online.connected = false; onlineUpdatePanel(); });
+                client.on('message', onlineOnMessage);
+            };
+            tryBroker();
+        }
+
+        function onlineSubscribe(room) {
+            online.room = room;
+            online.gotState = false;
+            online.client.subscribe(ONLINE_TOPIC(room) + '/#', { qos: 1 });
+            clearInterval(online.pingTimer);
+            const ping = () => online.client && online.client.connected && online.client.publish(ONLINE_TOPIC(room) + '/ping', JSON.stringify({ id: online.myId, t: Date.now() }));
+            ping();
+            online.pingTimer = setInterval(() => { ping(); onlineUpdatePanel(); }, 8000);
+            try { history.replaceState(null, '', location.pathname + '?room=' + room); } catch (e) {}
+            onlineUpdatePanel();
+        }
+
+        function onlineCreateRoom() {
+            if (online.room) return;
+            onlineShowError('');
+            const room = onlineRandomCode();
+            online.creating = true;
+            online.myColor = 'w';
+            online.players = { w: online.myId, b: null };
+            online.seq = 0;
+            resetGame(true);
+            boardOrientation = 'w';
+            onlineConnect(() => {
+                onlineSubscribe(room);
+                online.creating = false;
+                onlinePublishState();
+                updatePlayerLabels();
+                updateUI();
+            });
+            onlineUpdatePanel();
+        }
+
+        function onlineJoinFromInput() {
+            const code = document.getElementById('online-code-input').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+            if (code.length !== 6) { onlineShowError('Mã phòng gồm 6 ký tự.'); return; }
+            onlineJoinRoom(code);
+        }
+
+        function onlineJoinRoom(code) {
+            if (online.room === code) return;
+            if (online.room) onlineLeaveRoom(true);
+            onlineShowError('');
+            online.myColor = null;
+            online.players = { w: null, b: null };
+            online.seq = 0;
+            resetGame(true);
+            onlineConnect(() => {
+                onlineSubscribe(code);
+                clearTimeout(online.joinTimer);
+                online.joinTimer = setTimeout(() => {
+                    if (!online.gotState && online.room === code) {
+                        onlineShowError(`Không tìm thấy phòng ${code}. Kiểm tra lại mã, hoặc tạo phòng mới.`);
+                        onlineLeaveRoom(true);
+                    }
+                }, 6000);
+            });
+            online.room = code;
+            onlineUpdatePanel();
+        }
+
+        function onlineLeaveRoom(silent = false) {
+            clearTimeout(online.joinTimer);
+            clearInterval(online.pingTimer);
+            if (online.client) { try { online.client.end(true); } catch (e) {} }
+            online.client = null;
+            online.connected = false;
+            online.room = null;
+            online.myColor = null;
+            online.players = { w: null, b: null };
+            online.seq = 0;
+            online.opponentSeen = 0;
+            try { if (/[?&]room=/.test(location.search)) history.replaceState(null, '', location.pathname); } catch (e) {}
+            if (!silent) {
+                boardOrientation = 'w';
+                resetGame(true);
+            }
+            onlineUpdatePanel();
+            updatePlayerLabels();
+        }
+
+        function onlineStatePayload(movesOverride) {
+            const moves = movesOverride || game.history({ verbose: true }).map(m => ({ from: m.from, to: m.to, promotion: m.promotion }));
+            return { v: 1, seq: online.seq, moves, players: online.players, by: online.myId, t: Date.now() };
+        }
+
+        function onlinePublishState(movesOverride) {
+            if (!online.client || !online.room || !online.myColor) return;
+            online.seq += 1;
+            online.client.publish(ONLINE_TOPIC(online.room) + '/state', JSON.stringify(onlineStatePayload(movesOverride)), { qos: 1, retain: true });
+        }
+
+        function onlineNewGame() {
+            // Đổi màu quân cho ván mới
+            online.players = { w: online.players.b, b: online.players.w };
+            online.myColor = online.players.w === online.myId ? 'w' : (online.players.b === online.myId ? 'b' : null);
+            if (online.myColor) boardOrientation = online.myColor;
+            onlinePublishState([]);
+            onlineApplyMoves([]);
+        }
+
+        function onlineOnMessage(topic, payload) {
+            let msg;
+            try { msg = JSON.parse(payload.toString()); } catch (e) { return; }
+            if (!online.room || !topic.startsWith(ONLINE_TOPIC(online.room))) return;
+
+            if (topic.endsWith('/ping')) {
+                if (msg.id !== online.myId && (msg.id === online.players.w || msg.id === online.players.b)) {
+                    const wasAway = Date.now() - online.opponentSeen > 25000;
+                    online.opponentSeen = Date.now();
+                    if (wasAway) onlineUpdatePanel();
+                }
+                return;
+            }
+            if (!topic.endsWith('/state') || !msg || !Array.isArray(msg.moves)) return;
+
+            online.gotState = true;
+            clearTimeout(online.joinTimer);
+            if (msg.by !== online.myId && msg.seq <= online.seq && online.myColor) return; // bản cũ hơn
+            online.seq = Math.max(online.seq, msg.seq);
+            online.players = msg.players || { w: null, b: null };
+            if (msg.by !== online.myId) online.opponentSeen = Date.now();
+
+            // Xác định màu của mình; nếu ghế Đen còn trống thì ngồi vào
+            const prevColor = online.myColor;
+            if (online.players.w === online.myId) online.myColor = 'w';
+            else if (online.players.b === online.myId) online.myColor = 'b';
+            else if (!online.players.b && online.players.w) {
+                online.players = { w: online.players.w, b: online.myId };
+                online.myColor = 'b';
+                onlinePublishState(msg.moves);
+            } else if (!online.players.w && online.players.b) {
+                online.players = { w: online.myId, b: online.players.b };
+                online.myColor = 'w';
+                onlinePublishState(msg.moves);
+            } else online.myColor = null; // phòng đã đủ 2 người -> xem
+            if (online.myColor !== prevColor && online.myColor) boardOrientation = online.myColor;
+
+            if (msg.by !== online.myId || prevColor !== online.myColor) onlineApplyMoves(msg.moves);
+            updatePlayerLabels();
+            onlineUpdatePanel();
+        }
+
+        function onlineApplyMoves(moves) {
+            const local = game.history({ verbose: true });
+            const same = (a, b) => a.from === b.from && a.to === b.to && (a.promotion || '') === (b.promotion || '');
+            const isPrefix = local.length <= moves.length && local.every((m, i) => same(m, moves[i]));
+            if (isPrefix && moves.length === local.length) { updateUI(); return; }
+            if (isPrefix && moves.length === local.length + 1) {
+                playOpponentMove(moves[moves.length - 1]);
+                return;
+            }
+            // Khác nhiều (vào giữa ván, ván mới...): dựng lại toàn bộ ván
+            if (reviewGame) exitReview(true);
+            game.reset();
+            moveEvaluations = [];
+            for (const m of moves) {
+                if (!game.move({ from: m.from, to: m.to, promotion: m.promotion || 'q' })) break;
+                moveEvaluations.push(null);
+            }
+            const hist = game.history({ verbose: true });
+            const last = hist[hist.length - 1];
+            lastMove = last ? { from: last.from, to: last.to, rating: null } : null;
+            selectedSquare = null;
+            legalMoves = [];
+            currentEvalScore = 0;
+            updateEvalBar(0);
+            document.getElementById('gameover-modal').classList.add('hidden');
+            document.getElementById('promotion-modal').classList.add('hidden');
+            updateUI();
+        }
+
+        function playOpponentMove(m) {
+            executeMoveWithFLIP({ from: m.from, to: m.to, promotion: m.promotion }, true, true);
+        }
+
+        function onlineShareUrl() {
+            const base = /github\.io$/.test(location.hostname) || location.hostname === 'localhost' ? location.origin + location.pathname : ONLINE_WEB_URL;
+            return base + '?room=' + online.room;
+        }
+
+        function onlineShareLink() {
+            if (!online.room) return;
+            const url = onlineShareUrl();
+            const text = `Vào chơi cờ vua với mình! Mã phòng: ${online.room}`;
+            if (navigator.share) {
+                navigator.share({ title: 'Cờ Vua 3D', text, url }).catch(() => {});
+                return;
+            }
+            const done = () => onlineFlash('Đã copy link mời — gửi cho bạn qua Zalo / Messenger');
+            if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(url).then(done, () => prompt('Copy link này gửi cho bạn:', url));
+            else prompt('Copy link này gửi cho bạn:', url);
+        }
+
+        function onlineFlash(text) {
+            const el = document.getElementById('online-status');
+            el.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> ${text}`;
+            clearTimeout(onlineFlash.t);
+            onlineFlash.t = setTimeout(onlineUpdatePanel, 3000);
+        }
+
+        function onlineUpdatePanel() {
+            const lobby = document.getElementById('online-lobby');
+            const roomBox = document.getElementById('online-room');
+            if (!lobby) return;
+            lobby.classList.toggle('hidden', !!online.room);
+            roomBox.classList.toggle('hidden', !online.room);
+            if (!online.room) return;
+            document.getElementById('online-room-code').textContent = online.room;
+
+            const dot = (c, pulse) => `<span class="w-2 h-2 rounded-full ${c} ${pulse ? 'animate-pulse' : ''} flex-none"></span>`;
+            const opp = online.myColor === 'w' ? online.players.b : online.players.w;
+            const oppHere = opp && Date.now() - online.opponentSeen < 25000;
+            let html;
+            if (!online.connected) html = dot('bg-amber-400', true) + 'Đang kết nối...';
+            else if (!online.gotState && !online.myColor) html = dot('bg-amber-400', true) + 'Đang vào phòng...';
+            else if (!online.myColor) html = dot('bg-sky-400') + 'Phòng đã đủ 2 người — bạn đang xem trận đấu';
+            else if (!opp) html = dot('bg-amber-400', true) + 'Đang chờ đối thủ — bấm <b class="text-emerald-400">Mời bạn</b> để gửi link';
+            else if (game.game_over()) html = dot('bg-neutral-400') + 'Ván đã kết thúc — bấm <b>Ván mới</b> để chơi tiếp (đổi màu quân)';
+            else {
+                const myTurn = game.turn() === online.myColor;
+                html = dot(oppHere ? 'bg-emerald-400' : 'bg-red-400') +
+                    `Bạn cầm <b>${online.myColor === 'w' ? 'Trắng' : 'Đen'}</b> • ` +
+                    (myTurn ? '<b class="text-emerald-400">Tới lượt bạn</b>' : 'Đợi đối thủ đi...') +
+                    (oppHere ? '' : ' <span class="text-red-400">(đối thủ mất kết nối)</span>');
+            }
+            document.getElementById('online-status').innerHTML = html;
+        }
+
         window.onload = () => {
             initEngineWorker();
             updatePlayerLabels();
             updateUI();
+            // Mở bằng link mời (?room=MÃ) -> tự vào phòng
+            const roomParam = new URLSearchParams(location.search).get('room');
+            if (roomParam && /^[A-Z0-9]{6}$/i.test(roomParam)) {
+                setGameMode('online');
+                onlineJoinRoom(roomParam.toUpperCase());
+            }
         };
     </script>
 
