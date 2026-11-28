@@ -28,7 +28,7 @@ jobs:
         working-directory: app
         run: node scripts/prepare.mjs
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with: { path: app/www }
       - id: deployment
         uses: actions/deploy-pages@v4
