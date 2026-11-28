@@ -414,12 +414,58 @@
             background-color: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(5px);
         }
+
+        /* ===== Chế độ toàn màn hình: chỉ còn bàn cờ, luôn vừa khít màn hình (dọc & ngang) ===== */
+        #focus-bar { display: none; }
+        body.focus-mode {
+            min-height: 100vh;
+            min-height: 100dvh;
+            justify-content: center !important;
+            padding: max(env(safe-area-inset-top), 6px) 6px max(env(safe-area-inset-bottom), 6px) !important;
+            overflow: hidden;
+        }
+        body.focus-mode #app-header,
+        body.focus-mode #side-panel,
+        body.focus-mode #pwa-banner { display: none !important; }
+        body.focus-mode main { display: flex !important; justify-content: center; gap: 0 !important; }
+        body.focus-mode #focus-bar { display: block; }
+        /* Chiều rộng cột bàn cờ = phần chiều cao còn lại sau 2 thanh người chơi + hàng nút (~170px) */
+        body.focus-mode #board-col > div {
+            max-width: min(760px, calc(100vh - 170px)) !important;
+            max-width: min(760px, calc(100dvh - 170px)) !important;
+        }
+        body.focus-mode .board-stage { max-width: none; }
+        body.focus-mode #board-col { min-width: 0; }
+
+        /* Xoay ngang: bàn cờ bên trái cao bằng màn hình, thông tin & nút ở cột phải */
+        @media (orientation: landscape) and (max-height: 700px) {
+            body.focus-mode #board-col {
+                display: grid;
+                grid-template-columns: auto minmax(170px, 260px);
+                grid-template-rows: auto auto auto 1fr;
+                column-gap: 12px;
+                align-items: start;
+                width: auto;
+            }
+            body.focus-mode #board-col > div { max-width: none !important; width: 100%; }
+            body.focus-mode #board-col > div:nth-child(2) {
+                grid-column: 1; grid-row: 1 / span 4; margin: 0;
+                width: min(calc(100vh - 12px + 36px), calc(100vw - 300px));
+                width: min(calc(100dvh - 12px + 36px), calc(100vw - 300px));
+            }
+            body.focus-mode #board-col > div:nth-child(1) { grid-column: 2; grid-row: 1; border-radius: 12px; border-bottom-width: 1px; }
+            body.focus-mode #board-col > div:nth-child(3) { grid-column: 2; grid-row: 2; border-radius: 12px; border-top-width: 1px; margin-top: 8px; }
+            body.focus-mode #review-bar { grid-column: 2; grid-row: 3; }
+            body.focus-mode #focus-bar { grid-column: 2; grid-row: 4; align-self: end; }
+            body.focus-mode #focus-bar .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            body.focus-mode #review-bar .grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+        }
     </style>
 <style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.absolute{position:absolute}.inset-0{inset:0px}.bottom-0{bottom:0px}.top-0{top:0px}.z-40{z-index:40}.z-50{z-index:50}.mx-4{margin-left:1rem;margin-right:1rem}.mx-auto{margin-left:auto;margin-right:auto}.my-0\.5{margin-top:0.125rem;margin-bottom:0.125rem}.mb-1{margin-bottom:0.25rem}.mb-1\.5{margin-bottom:0.375rem}.mb-3{margin-bottom:0.75rem}.mb-4{margin-bottom:1rem}.mb-5{margin-bottom:1.25rem}.mr-1{margin-right:0.25rem}.mt-0\.5{margin-top:0.125rem}.mt-2{margin-top:0.5rem}.mt-3{margin-top:0.75rem}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-11{height:2.75rem}.h-16{height:4rem}.h-5{height:1.25rem}.h-7{height:1.75rem}.h-9{height:2.25rem}.h-\[560px\]{height:560px}.min-h-screen{min-height:100vh}.w-11{width:2.75rem}.w-16{width:4rem}.w-7{width:1.75rem}.w-9{width:2.25rem}.w-full{width:100%}.max-w-6xl{max-width:72rem}.max-w-\[596px\]{max-width:596px}.max-w-xs{max-width:20rem}.flex-1{flex:1 1 0%}.shrink-0{flex-shrink:0}@keyframes pulse{50%{opacity:.5}}.animate-pulse{animation:pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.grid-cols-5{grid-template-columns:repeat(5, minmax(0, 1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-center{align-items:center}.items-stretch{align-items:stretch}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-0\.5{gap:0.125rem}.gap-1{gap:0.25rem}.gap-1\.5{gap:0.375rem}.gap-2{gap:0.5rem}.gap-2\.5{gap:0.625rem}.gap-3{gap:0.75rem}.gap-6{gap:1.5rem}.space-y-1 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.25rem * var(--tw-space-y-reverse))}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.overflow-y-auto{overflow-y:auto}.rounded{border-radius:0.25rem}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-md{border-radius:0.375rem}.rounded-xl{border-radius:0.75rem}.rounded-b-xl{border-bottom-right-radius:0.75rem;border-bottom-left-radius:0.75rem}.rounded-t-xl{border-top-left-radius:0.75rem;border-top-right-radius:0.75rem}.border{border-width:1px}.border-y{border-top-width:1px;border-bottom-width:1px}.border-b{border-bottom-width:1px}.border-b-0{border-bottom-width:0px}.border-t{border-top-width:1px}.border-t-0{border-top-width:0px}.border-\[\#f0d9b5\]\/40{border-color:rgb(240 217 181 / 0.4)}.border-cyan-400\/30{border-color:rgb(34 211 238 / 0.3)}.border-cyan-500\/30{border-color:rgb(6 182 212 / 0.3)}.border-emerald-400\/30{border-color:rgb(52 211 153 / 0.3)}.border-neutral-700{--tw-border-opacity:1;border-color:rgb(64 64 64 / var(--tw-border-opacity, 1))}.border-neutral-800{--tw-border-opacity:1;border-color:rgb(38 38 38 / var(--tw-border-opacity, 1))}.border-cyan-700\/60{border-color:rgb(14 116 144 / 0.6)}.bg-\[\#141414\]{--tw-bg-opacity:1;background-color:rgb(20 20 20 / var(--tw-bg-opacity, 1))}.bg-\[\#161616\]{--tw-bg-opacity:1;background-color:rgb(22 22 22 / var(--tw-bg-opacity, 1))}.bg-\[\#1e1e1e\]{--tw-bg-opacity:1;background-color:rgb(30 30 30 / var(--tw-bg-opacity, 1))}.bg-\[\#222222\]{--tw-bg-opacity:1;background-color:rgb(34 34 34 / var(--tw-bg-opacity, 1))}.bg-\[\#2a2a2a\]{--tw-bg-opacity:1;background-color:rgb(42 42 42 / var(--tw-bg-opacity, 1))}.bg-cyan-500\/20{background-color:rgb(6 182 212 / 0.2)}.bg-cyan-600{--tw-bg-opacity:1;background-color:rgb(8 145 178 / var(--tw-bg-opacity, 1))}.bg-emerald-600{--tw-bg-opacity:1;background-color:rgb(5 150 105 / var(--tw-bg-opacity, 1))}.bg-neutral-700{--tw-bg-opacity:1;background-color:rgb(64 64 64 / var(--tw-bg-opacity, 1))}.bg-neutral-800{--tw-bg-opacity:1;background-color:rgb(38 38 38 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-white\/10{background-color:rgb(255 255 255 / 0.1)}.bg-cyan-950{--tw-bg-opacity:1;background-color:rgb(8 51 68 / var(--tw-bg-opacity, 1))}.bg-gradient-to-br{background-image:linear-gradient(to bottom right, var(--tw-gradient-stops))}.from-\[\#f0d9b5\]{--tw-gradient-from:#f0d9b5 var(--tw-gradient-from-position);--tw-gradient-to:rgb(240 217 181 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.from-cyan-600{--tw-gradient-from:#0891b2 var(--tw-gradient-from-position);--tw-gradient-to:rgb(8 145 178 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.to-\[\#b58863\]{--tw-gradient-to:#b58863 var(--tw-gradient-to-position)}.to-blue-800{--tw-gradient-to:#1e40af var(--tw-gradient-to-position)}.p-1{padding:0.25rem}.p-2{padding:0.5rem}.p-2\.5{padding:0.625rem}.p-3\.5{padding:0.875rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.px-2\.5{padding-left:0.625rem;padding-right:0.625rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-3\.5{padding-left:0.875rem;padding-right:0.875rem}.px-4{padding-left:1rem;padding-right:1rem}.py-0\.5{padding-top:0.125rem;padding-bottom:0.125rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-1\.5{padding-top:0.375rem;padding-bottom:0.375rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-2\.5{padding-top:0.625rem;padding-bottom:0.625rem}.py-8{padding-top:2rem;padding-bottom:2rem}.pt-1{padding-top:0.25rem}.text-center{text-align:center}.font-mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-\[11px\]{font-size:11px}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-medium{font-weight:500}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.italic{font-style:italic}.tracking-tight{letter-spacing:-0.025em}.tracking-wider{letter-spacing:0.05em}.text-\[\#2c180c\]{--tw-text-opacity:1;color:rgb(44 24 12 / var(--tw-text-opacity, 1))}.text-cyan-300{--tw-text-opacity:1;color:rgb(103 232 249 / var(--tw-text-opacity, 1))}.text-cyan-400{--tw-text-opacity:1;color:rgb(34 211 238 / var(--tw-text-opacity, 1))}.text-neutral-200{--tw-text-opacity:1;color:rgb(229 229 229 / var(--tw-text-opacity, 1))}.text-neutral-300{--tw-text-opacity:1;color:rgb(212 212 212 / var(--tw-text-opacity, 1))}.text-neutral-400{--tw-text-opacity:1;color:rgb(163 163 163 / var(--tw-text-opacity, 1))}.text-neutral-500{--tw-text-opacity:1;color:rgb(115 115 115 / var(--tw-text-opacity, 1))}.text-neutral-900{--tw-text-opacity:1;color:rgb(23 23 23 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.shadow{--tw-shadow:0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-md{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.hover\:bg-\[\#333333\]:hover{--tw-bg-opacity:1;background-color:rgb(51 51 51 / var(--tw-bg-opacity, 1))}.hover\:bg-\[\#353535\]:hover{--tw-bg-opacity:1;background-color:rgb(53 53 53 / var(--tw-bg-opacity, 1))}.hover\:bg-\[\#383838\]:hover{--tw-bg-opacity:1;background-color:rgb(56 56 56 / var(--tw-bg-opacity, 1))}.hover\:bg-emerald-500:hover{--tw-bg-opacity:1;background-color:rgb(16 185 129 / var(--tw-bg-opacity, 1))}.hover\:bg-neutral-200:hover{--tw-bg-opacity:1;background-color:rgb(229 229 229 / var(--tw-bg-opacity, 1))}.hover\:text-white:hover{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.disabled\:pointer-events-none:disabled{pointer-events:none}.disabled\:opacity-40:disabled{opacity:0.4}@media (min-width: 640px){.sm\:inline{display:inline}.sm\:p-4{padding:1rem}.sm\:text-2xl{font-size:1.5rem;line-height:2rem}}@media (min-width: 768px){.md\:p-6{padding:1.5rem}}@media (min-width: 1024px){.lg\:col-span-5{grid-column:span 5 / span 5}.lg\:col-span-7{grid-column:span 7 / span 7}.lg\:h-\[640px\]{height:640px}.lg\:grid-cols-12{grid-template-columns:repeat(12, minmax(0, 1fr))}}</style></head>
 <body class="min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 md:p-6">
 
     <!-- Header -->
-    <header class="w-full max-w-6xl flex items-center justify-between mb-4 px-2">
+    <header id="app-header" class="w-full max-w-6xl flex items-center justify-between mb-4 px-2">
         <div class="flex items-center gap-3">
             <div class="w-11 h-11 bg-gradient-to-br from-[#f0d9b5] to-[#b58863] rounded-xl flex items-center justify-center text-[#2c180c] text-2xl shadow-lg border border-[#f0d9b5]/40">
                 <i class="fa-solid fa-chess-king"></i>
@@ -443,6 +489,9 @@
             <button onclick="flipBoard()" class="p-2.5 bg-[#222222] hover:bg-[#333333] text-neutral-200 rounded-lg transition shadow border border-neutral-700" title="Xoay bàn cờ">
                 <i class="fa-solid fa-retweet"></i>
             </button>
+            <button onclick="toggleFocusMode()" class="px-3 py-2.5 bg-amber-500 hover:bg-amber-400 text-neutral-900 rounded-lg transition shadow text-xs font-extrabold flex items-center gap-1.5" title="Toàn màn hình">
+                <i class="fa-solid fa-expand"></i><span class="hidden sm:inline">Toàn màn hình</span>
+            </button>
         </div>
     </header>
 
@@ -450,7 +499,7 @@
     <main class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         <!-- Cột Trái: Thanh Eval + Bàn cờ 3D + Thanh thông tin người chơi -->
-        <div class="lg:col-span-7 flex flex-col items-center w-full">
+        <div id="board-col" class="lg:col-span-7 flex flex-col items-center w-full">
             
             <!-- Thanh thông tin đối thủ (Phía trên) -->
             <div class="w-full max-w-[596px] flex items-center justify-between bg-[#1e1e1e] px-3.5 py-2.5 rounded-t-xl border border-b-0 border-neutral-800 shadow-md">
@@ -957,10 +1006,22 @@
                     <button onclick="exitReview()" title="Thoát xem lại" class="py-2.5 bg-amber-500 hover:bg-amber-400 text-neutral-900 font-extrabold rounded-lg text-xs">Thoát</button>
                 </div>
             </div>
+
+            <!-- Hàng nút gọn khi ở chế độ toàn màn hình -->
+            <div id="focus-bar" class="w-full max-w-[596px] mt-2">
+                <div id="focus-status" class="text-center text-xs font-bold text-neutral-300 mb-1.5">Lượt Trắng đi</div>
+                <div class="grid grid-cols-5 gap-1.5">
+                    <button onclick="undoMove()" id="focus-undo" title="Đi lại" class="py-2.5 bg-[#2a2a2a] hover:bg-[#383838] disabled:opacity-40 text-neutral-100 rounded-lg text-sm"><i class="fa-solid fa-rotate-left"></i></button>
+                    <button onclick="flipBoard()" title="Xoay bàn" class="py-2.5 bg-[#2a2a2a] hover:bg-[#383838] text-neutral-100 rounded-lg text-sm"><i class="fa-solid fa-arrows-up-down"></i></button>
+                    <button onclick="startReview()" title="Xem lại ván" class="py-2.5 bg-[#2a2a2a] hover:bg-[#383838] text-amber-400 rounded-lg text-sm"><i class="fa-solid fa-clock-rotate-left"></i></button>
+                    <button onclick="resetGame()" title="Ván mới" class="py-2.5 bg-white hover:bg-neutral-200 text-neutral-900 rounded-lg text-sm font-extrabold"><i class="fa-solid fa-plus"></i></button>
+                    <button onclick="toggleFocusMode(false)" title="Thoát toàn màn hình" class="py-2.5 bg-amber-500 hover:bg-amber-400 text-neutral-900 rounded-lg text-sm"><i class="fa-solid fa-compress"></i></button>
+                </div>
+            </div>
         </div>
 
         <!-- Cột Phải: Bảng điều khiển, Cấp độ Stockfridge & Đánh giá nước đi -->
-        <div class="lg:col-span-5 w-full bg-[#1e1e1e] rounded-xl border border-neutral-800 shadow-2xl flex flex-col h-[560px] lg:h-[640px]">
+        <div id="side-panel" class="lg:col-span-5 w-full bg-[#1e1e1e] rounded-xl border border-neutral-800 shadow-2xl flex flex-col h-[560px] lg:h-[640px]">
             
             <!-- Cài đặt chế độ & Cấp độ Stockfridge -->
             <div class="p-4 border-b border-neutral-800 space-y-3">
@@ -1024,6 +1085,16 @@
                         <button onclick="setDifficulty(3)" id="diff-3" class="diff-btn py-1.5 text-xs font-bold rounded-md bg-cyan-600 text-white shadow transition">Lv 3</button>
                         <button onclick="setDifficulty(4)" id="diff-4" class="diff-btn py-1.5 text-xs font-medium rounded-md text-neutral-400 hover:text-white transition">Lv 4</button>
                         <button onclick="setDifficulty(5)" id="diff-5" class="diff-btn py-1.5 text-xs font-medium rounded-md text-neutral-400 hover:text-white transition">Lv 5</button>
+                    </div>
+                    <!-- Chọn bên: Trắng / Đen / Ngẫu nhiên -->
+                    <div class="flex items-center justify-between text-xs text-neutral-400 mt-3 mb-1.5">
+                        <span>Bạn cầm quân:</span>
+                        <span id="side-result" class="text-cyan-400 font-bold">Bạn cầm Trắng (đi trước)</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1 bg-[#141414] p-1 rounded-lg border border-neutral-800">
+                        <button onclick="setSide('w')" id="side-w"><span class="w-3 h-3 rounded-full bg-white border border-neutral-400"></span> Trắng</button>
+                        <button onclick="setSide('b')" id="side-b"><span class="w-3 h-3 rounded-full bg-neutral-900 border border-neutral-500"></span> Đen</button>
+                        <button onclick="setSide('random')" id="side-random"><i class="fa-solid fa-shuffle"></i> Ngẫu nhiên</button>
                     </div>
                 </div>
             </div>
@@ -1142,6 +1213,11 @@
         let moveEvaluations = []; // Lưu đánh giá từng nước đi
         let currentEvalScore = 0; // Điểm đánh giá hiện tại (tính theo centipawns, + là Trắng ưu)
         let pendingFlipAnimation = null; // Lưu tọa độ cho hiệu ứng FLIP 60fps
+        // Đấu máy: bên người chơi cầm ('w' / 'b') và lựa chọn ('w' / 'b' / 'random')
+        let sideChoice = 'w';
+        try { sideChoice = localStorage.getItem('covua3d-side') || 'w'; } catch (e) {}
+        let playerSide = sideChoice === 'b' ? 'b' : 'w';
+        const aiColor = () => (playerSide === 'w' ? 'b' : 'w');
         let reviewGame = null; // Bản sao ván cờ khi đang xem lại (null = đang chơi bình thường)
         let reviewPly = 0;     // Đang xem tới nước thứ mấy
 
@@ -1441,18 +1517,20 @@
                     return { move: randMove, evalScore: sc };
                 }
 
+                // Máy cầm được cả hai màu: cầm Trắng thì tìm điểm cao nhất, cầm Đen thì tìm điểm thấp nhất
+                const aiIsWhite = g.turn() === 'w';
                 let bestMove = null;
-                let bestValue = Infinity;
+                let bestValue = aiIsWhite ? -Infinity : Infinity;
                 const ordered = orderMoves([...moves].sort(() => Math.random() - 0.5));
 
                 for (let i = 0; i < ordered.length; i++) {
                     const m = ordered[i];
                     g.move(m);
-                    let val = minimax(cfg.depth - 1, g, -Infinity, Infinity, true);
-                    if (cfg.tacticalBonus && g.in_check()) val -= 25;
+                    let val = minimax(cfg.depth - 1, g, -Infinity, Infinity, !aiIsWhite);
+                    if (cfg.tacticalBonus && g.in_check()) val += aiIsWhite ? 25 : -25;
                     g.undo();
 
-                    if (val < bestValue) {
+                    if (aiIsWhite ? val > bestValue : val < bestValue) {
                         bestValue = val;
                         bestMove = m;
                     }
@@ -1526,7 +1604,7 @@
         }
 
         async function makeStockfridgeMove() {
-            if (game.game_over() || game.turn() !== 'b') return;
+            if (game.game_over() || game.turn() !== aiColor()) return;
             isAiThinking = true;
             document.getElementById('ai-thinking').classList.remove('hidden');
 
@@ -1650,7 +1728,7 @@
                 });
 
                 // Gọi Stockfridge AI chạy song song trên Web Worker
-                if (gameMode === 'ai' && !game.game_over() && game.turn() === 'b') {
+                if (gameMode === 'ai' && !game.game_over() && game.turn() === aiColor()) {
                     makeStockfridgeMove();
                 }
             } else {
@@ -1707,7 +1785,7 @@
         function handleSquareClick(squareName) {
             if (reviewGame) return; // Đang xem lại ván: không cho đi quân
             if (game.game_over() || isAiThinking) return;
-            if (gameMode === 'ai' && game.turn() === 'b') return;
+            if (gameMode === 'ai' && game.turn() === aiColor()) return;
             if (gameMode === 'online' && !onlineCanMove()) return;
 
             const moveAttempt = legalMoves.find(m => m.to === squareName);
@@ -1906,6 +1984,18 @@
                 : 'text-xs font-extrabold px-3 py-1 rounded-md bg-neutral-800 text-white border border-neutral-600 shadow';
 
             document.getElementById('btn-undo').disabled = game.history().length === 0 || isAiThinking || gameMode === 'online' || !!reviewGame;
+            // Hàng nút ở chế độ toàn màn hình
+            const focusUndo = document.getElementById('focus-undo');
+            if (focusUndo) focusUndo.disabled = document.getElementById('btn-undo').disabled;
+            const focusStatus = document.getElementById('focus-status');
+            if (focusStatus) {
+                let t = isWhiteTurn ? 'Lượt Trắng đi' : 'Lượt Đen đi';
+                if (gameMode === 'ai') t = game.turn() === playerSide ? 'Tới lượt bạn' : 'Stockfridge đang nghĩ...';
+                if (gameMode === 'online' && online.room) t = !online.myColor ? 'Đang xem trận' : (game.turn() === online.myColor ? 'Tới lượt bạn' : 'Đợi đối thủ đi...');
+                if (game.in_check() && !game.game_over()) t += ' • Chiếu!';
+                if (game.game_over()) t = 'Ván đã kết thúc';
+                focusStatus.textContent = t;
+            }
             if (gameMode === 'online') onlineUpdatePanel();
 
             if (game.game_over() && !reviewGame) {
@@ -1916,11 +2006,15 @@
 
                 if (game.in_checkmate()) {
                     const winnerColor = game.turn() === 'w' ? 'b' : 'w';
-                    const winner = winnerColor === 'b' ? (gameMode === 'ai' ? 'Stockfridge (Đen)' : 'Quân Đen') : 'Quân Trắng';
+                    const winner = winnerColor === 'b' ? 'Quân Đen' : 'Quân Trắng';
                     title.textContent = 'Chiếu Hết!';
-                    desc.textContent = gameMode === 'online' && online.myColor
-                        ? (online.myColor === winnerColor ? 'Bạn đã chiến thắng! 🎉' : 'Đối thủ đã chiến thắng.')
-                        : `${winner} giành chiến thắng tuyệt đối!`;
+                    if (gameMode === 'online' && online.myColor) {
+                        desc.textContent = online.myColor === winnerColor ? 'Bạn đã chiến thắng! 🎉' : 'Đối thủ đã chiến thắng.';
+                    } else if (gameMode === 'ai') {
+                        desc.textContent = winnerColor === playerSide ? 'Bạn đã đánh bại Stockfridge! 🎉' : `Stockfridge (${winnerColor === 'w' ? 'Trắng' : 'Đen'}) giành chiến thắng!`;
+                    } else {
+                        desc.textContent = `${winner} giành chiến thắng tuyệt đối!`;
+                    }
                     icon.innerHTML = '<i class="fa-solid fa-trophy text-yellow-400"></i>';
                 } else {
                     title.textContent = 'Hòa Cờ!';
@@ -2084,27 +2178,46 @@
                 return;
             }
 
-            if (boardOrientation === 'w') {
-                topName.textContent = gameMode === 'ai' ? `Stockfridge (${cfg.name})` : 'Người chơi 2 (Đen)';
-                topElo.textContent = gameMode === 'ai' ? `Elo ${cfg.elo}` : 'Người chơi';
-                topElo.className = gameMode === 'ai' 
-                    ? 'text-[11px] font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/60'
-                    : 'text-[11px] font-semibold px-2 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700';
+            // Mỗi thanh (trên/dưới) hiển thị người cầm màu quân ở phía đó của bàn cờ
+            const colorName = c => (c === 'w' ? 'Trắng' : 'Đen');
+            const fill = (color, nameEl, eloEl, avatarEl) => {
+                const isAi = gameMode === 'ai' && color === aiColor();
+                if (isAi) {
+                    nameEl.textContent = `Stockfridge (${cfg.name})`;
+                    eloEl.textContent = `Elo ${cfg.elo}`;
+                    eloEl.className = 'text-[11px] font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/60';
+                    avatarEl.innerHTML = '<i class="fa-solid fa-snowflake"></i>';
+                } else {
+                    nameEl.textContent = gameMode === 'ai'
+                        ? `Bạn (${colorName(color)})`
+                        : (color === 'w' ? 'Người chơi 1 (Trắng)' : 'Người chơi 2 (Đen)');
+                    eloEl.textContent = 'Người chơi';
+                    eloEl.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700';
+                    avatarEl.innerHTML = '<i class="fa-solid fa-user"></i>';
+                }
+            };
+            const bottomColor = boardOrientation;
+            const topColor = bottomColor === 'w' ? 'b' : 'w';
+            fill(topColor, topName, topElo, topAvatar);
+            fill(bottomColor, bottomName, bottomElo, bottomAvatar);
+        }
 
-                bottomName.textContent = 'Bạn (Trắng)';
-                bottomElo.textContent = 'Người chơi';
-                bottomElo.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700';
+        // Chọn bên khi đấu máy: 'w' / 'b' / 'random'
+        function setSide(choice) {
+            sideChoice = choice;
+            try { localStorage.setItem('covua3d-side', choice); } catch (e) {}
+            updateSideButtons();
+            if (gameMode === 'ai') resetGame();
+        }
 
-                topAvatar.innerHTML = gameMode === 'ai' ? '<i class="fa-solid fa-snowflake"></i>' : '<i class="fa-solid fa-user"></i>';
-                bottomAvatar.innerHTML = '<i class="fa-solid fa-user"></i>';
-            } else {
-                topName.textContent = 'Bạn (Trắng)';
-                topElo.textContent = 'Người chơi';
-                bottomName.textContent = gameMode === 'ai' ? `Stockfridge (${cfg.name})` : 'Người chơi 2 (Đen)';
-                bottomElo.textContent = gameMode === 'ai' ? `Elo ${cfg.elo}` : 'Người chơi';
-                topAvatar.innerHTML = '<i class="fa-solid fa-user"></i>';
-                bottomAvatar.innerHTML = gameMode === 'ai' ? '<i class="fa-solid fa-snowflake"></i>' : '<i class="fa-solid fa-user"></i>';
-            }
+        function updateSideButtons() {
+            ['w', 'b', 'random'].forEach(c => {
+                const btn = document.getElementById(`side-${c}`);
+                if (!btn) return;
+                btn.className = c === sideChoice
+                    ? 'py-1.5 text-xs font-bold rounded-md bg-cyan-600 text-white shadow transition flex items-center justify-center gap-1.5'
+                    : 'py-1.5 text-xs font-medium rounded-md text-neutral-400 hover:text-white transition flex items-center justify-center gap-1.5';
+            });
         }
 
         function flipBoard() {
@@ -2117,9 +2230,10 @@
             if (isAiThinking || game.history().length === 0 || gameMode === 'online' || reviewGame) return;
 
             if (gameMode === 'ai') {
+                // Lùi tới khi lại tới lượt người chơi (bỏ cả nước của máy)
                 game.undo();
                 moveEvaluations.pop();
-                if (game.turn() === 'b') {
+                if (game.turn() !== playerSide && game.history().length > 0) {
                     game.undo();
                     moveEvaluations.pop();
                 }
@@ -2140,6 +2254,8 @@
             updateEvalBar(currentEvalScore);
             document.getElementById('gameover-modal').classList.add('hidden');
             updateUI();
+            // Lùi về đầu ván khi máy cầm Trắng -> máy đi lại nước đầu
+            if (gameMode === 'ai' && !game.game_over() && game.turn() === aiColor()) setTimeout(makeStockfridgeMove, 300);
         }
 
         function resetGame(localOnly = false) {
@@ -2173,8 +2289,19 @@
             document.getElementById('eval-card-desc').textContent = 'Đi một nước để nhận đánh giá từ Stockfridge';
             document.getElementById('eval-card-diff').textContent = '0.0';
 
+            // Đấu máy: chọn bên cho ván mới (ngẫu nhiên nếu chọn "Ngẫu nhiên"), bên mình luôn ở dưới
+            if (gameMode === 'ai') {
+                playerSide = sideChoice === 'random' ? (Math.random() < 0.5 ? 'w' : 'b') : sideChoice;
+                boardOrientation = playerSide;
+                const sideLabel = document.getElementById('side-result');
+                if (sideLabel) sideLabel.textContent = `Bạn cầm ${playerSide === 'w' ? 'Trắng (đi trước)' : 'Đen (máy đi trước)'}`;
+            }
+
             updatePlayerLabels();
             updateUI();
+
+            // Máy cầm Trắng thì máy đi nước đầu tiên
+            if (gameMode === 'ai' && game.turn() === aiColor()) setTimeout(makeStockfridgeMove, 500);
         }
 
         /**
@@ -2296,6 +2423,39 @@
             else if (e.key === 'End') { reviewGoto(Infinity); e.preventDefault(); }
             else if (e.key === 'Escape') { exitReview(); }
         });
+
+        /**
+         * TOÀN MÀN HÌNH: ẩn tiêu đề & bảng bên phải, bàn cờ co vừa màn hình.
+         * Android / máy tính dùng thêm Fullscreen API; iPhone (không hỗ trợ API này) chỉ dùng giao diện gọn.
+         */
+        function toggleFocusMode(force) {
+            const on = typeof force === 'boolean' ? force : !document.body.classList.contains('focus-mode');
+            document.body.classList.toggle('focus-mode', on);
+            const el = document.documentElement;
+            const fsActive = document.fullscreenElement || document.webkitFullscreenElement;
+            try {
+                if (on && !fsActive) {
+                    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+                    if (req) {
+                        const p = req.call(el, { navigationUI: 'hide' });
+                        if (p && p.catch) p.catch(() => {});
+                        if (screen.orientation && screen.orientation.lock) screen.orientation.lock('portrait').catch(() => {});
+                    }
+                } else if (!on && fsActive) {
+                    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+                    if (exit) { const p = exit.call(document); if (p && p.catch) p.catch(() => {}); }
+                }
+            } catch (e) {}
+            window.scrollTo(0, 0);
+            updateStatus();
+        }
+
+        // Người dùng thoát toàn màn hình bằng nút Back / phím Esc -> tắt luôn giao diện gọn
+        ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => {
+            if (!(document.fullscreenElement || document.webkitFullscreenElement) && document.body.classList.contains('focus-mode')) {
+                document.body.classList.remove('focus-mode');
+            }
+        }));
 
         /**
          * CHƠI ONLINE 1 ĐẤU 1: mỗi người một máy (PC / điện thoại), vào chung phòng qua mã hoặc link.
@@ -2606,8 +2766,8 @@
 
         window.onload = () => {
             initEngineWorker();
-            updatePlayerLabels();
-            updateUI();
+            updateSideButtons();
+            resetGame(true); // áp dụng bên đã chọn (máy cầm Trắng thì máy đi trước)
             // Mở bằng link mời (?room=MÃ) -> tự vào phòng
             const roomParam = new URLSearchParams(location.search).get('room');
             if (roomParam && /^[A-Z0-9]{6}$/i.test(roomParam)) {
