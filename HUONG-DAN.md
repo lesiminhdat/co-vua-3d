@@ -42,7 +42,17 @@ git push -u origin main
 4. Mở lần chạy đó, kéo xuống phần **Artifacts** để tải: `CoVua3D-android-apk`, `CoVua3D-ios-ipa`, `CoVua3D-desktop-Windows`, `CoVua3D-desktop-macOS`.
 5. Muốn có trang tải cố định (Releases): tạo tag `git tag v1.0.0 && git push origin v1.0.0`.
 
-## Cài trên điện thoại
+## Web app — cài từ trình duyệt, không cần ESign
+
+Link: **https://lesiminhdat.github.io/co-vua-3d/** (tự cập nhật mỗi khi đẩy code lên nhánh `main`).
+
+- **iPhone:** mở link bằng **Safari** → bấm **Chia sẻ** → **Thêm vào MH chính**. Không cần ký, không hết hạn.
+- **Android:** mở bằng Chrome → bấm **Cài đặt** trên thanh hiện ra ở cuối trang.
+- Sau lần mở đầu tiên, app chạy được cả khi không có mạng.
+
+Chạy thử bản web trên máy: `node app/scripts/serve.mjs` rồi mở http://localhost:5173.
+
+## Cài trên điện thoại (file APK / IPA)
 
 **Android:** chép file `.apk` vào điện thoại → mở → cho phép "Cài ứng dụng không rõ nguồn gốc". Đây là bản ký debug; nếu cài bản mới build ở lần chạy khác mà báo xung đột chữ ký, hãy gỡ bản cũ trước.
 
