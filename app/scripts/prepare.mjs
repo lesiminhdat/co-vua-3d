@@ -1,6 +1,7 @@
 // Tạo thư mục www/ từ ../index.html: bỏ script Gemini chèn vào, tải thư viện về để chạy offline.
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -76,6 +77,53 @@ rep('</head>', `<style>
 // Dự phòng engine khi Web Worker không chạy (iOS) -> tránh treo bàn cờ.
 fs.copyFileSync(path.join(root, 'scripts', 'engine-fallback.js'), path.join(vendor, 'engine-fallback.js'));
 rep('</body>', '<script src="vendor/engine-fallback.js"></script>\n</body>');
+// Web app (PWA): icon, manifest, service worker, nút/hướng dẫn cài lên màn hình chính.
+for (const f of fs.readdirSync(path.join(root, 'assets', 'pwa'))) fs.copyFileSync(path.join(root, 'assets', 'pwa', f), path.join(www, f));
+fs.copyFileSync(path.join(root, 'scripts', 'pwa-install.js'), path.join(vendor, 'pwa-install.js'));
+fs.writeFileSync(path.join(www, 'manifest.webmanifest'), JSON.stringify({
+  name: 'Cờ Vua 3D', short_name: 'Cờ Vua 3D', description: 'Cờ Vua 3D - Stockfridge AI & Đánh Giá Nước Đi',
+  lang: 'vi', start_url: './', scope: './', display: 'standalone', orientation: 'any',
+  background_color: '#171717', theme_color: '#171717',
+  icons: [
+    { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+    { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+    { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+  ]
+}, null, 2));
+rep('<title>', `<link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <meta name="theme-color" content="#171717">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Cờ Vua 3D">
+    <title>`);
+rep('</body>', '<script src="vendor/pwa-install.js"></script>\n</body>');
 if (/https?:\/\/(cdn|fonts)\./.test(html)) console.warn('Cảnh báo: vẫn còn link CDN trong HTML');
 fs.writeFileSync(path.join(www, 'index.html'), html);
-console.log('www/index.html ready');
+
+// Service worker: lưu sẵn toàn bộ file để chạy offline; đổi phiên bản cache mỗi khi nội dung đổi.
+const listFiles = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap(d =>
+  d.isDirectory() ? listFiles(path.join(dir, d.name)) : [path.join(dir, d.name)]);
+const files = listFiles(www).map(f => path.relative(www, f).split(path.sep).join('/')).filter(f => f !== 'sw.js').sort();
+const hash = crypto.createHash('sha256');
+for (const f of files) hash.update(f).update(fs.readFileSync(path.join(www, f)));
+const cacheName = 'covua3d-' + hash.digest('hex').slice(0, 12);
+fs.writeFileSync(path.join(www, 'sw.js'), `// Tự sinh bởi scripts/prepare.mjs
+const CACHE = ${JSON.stringify(cacheName)};
+const FILES = ${JSON.stringify(['./', ...files], null, 1)};
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    .then(() => self.clients.claim()));
+});
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(hit => hit || fetch(e.request).catch(() =>
+    e.request.mode === 'navigate' ? caches.match('./') : Response.error())));
+});
+`);
+console.log('www/index.html ready (' + files.length + ' files, cache ' + cacheName + ')');
